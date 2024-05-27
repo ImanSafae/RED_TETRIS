@@ -5,7 +5,7 @@
 
     const width = 10;
     // const height = 20;
-    const offset = 4;
+    const offset = ref(4);
 
     let gridArray = ref(new Array(200).fill(''));
 
@@ -14,7 +14,7 @@
     onMounted(() => {
         window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight') {
-                currentTetromino.value = moveRight(currentTetromino.value, gridArray, width, offset);
+                offset.value = moveRight(currentTetromino.value, gridArray, width, offset.value);
             }
             else if (e.key === 'ArrowLeft') {
                 currentTetromino.value = moveLeft(currentTetromino.value, gridArray, width, offset);
@@ -112,6 +112,7 @@
     }
 
     function isAtBottom(tetromino, gridArray, width, offset) {
+        console.log("offset to check:", offset);
         if (tetromino.some((index) => (index + width + offset) > gridArray.length)) {
             return true;
         }
@@ -138,8 +139,9 @@
 
     function freezeTetromino(tetromino, gridArray, offset) {
         tetromino.forEach((index) => {
-            gridArray.value[index + offset] = 'taken';
+            gridArray[index + offset] = 'taken';
         });
+        return gridArray;
     }
 
     function rotate(tetromino, tetrominoRotations, currentRotationIndex, grid, offset) {
@@ -156,12 +158,13 @@
 
     function moveRight(tetromino, grid, width, offset) {
         if (isAtRightEdge(tetromino, width, offset)) {
-            return tetromino;
+            return offset;
         }
         grid.value = undrawTetromino(tetromino, grid.value, offset);
-        let newTetromino = tetromino.map(index => index + 1);
-        grid.value = drawTetromino(newTetromino, grid.value, offset);
-        return newTetromino;
+        offset += 1;
+        // let newTetromino = tetromino.map(index => index + 1);
+        grid.value = drawTetromino(tetromino, grid.value, offset);
+        return offset;
     }
 
     function moveLeft(tetromino, grid, width, offset) {
@@ -174,25 +177,36 @@
         return newTetromino;
     }
 
+    function nextTetrominoIndex(tetromino, grid, width, offset, randomIndex) {
+        // if (isAtBottom(tetromino, grid.value, width, offset)) {
+            console.log("current tetromino;", randomIndex);
+            randomIndex = Math.floor(Math.random() * tetrominosArray.length);
+            console.log("new tetromino:", randomIndex);
+        // }
+        return randomIndex;
+    }
 
-    function moveDown(tetromino, grid, width, offset, randomIndex) {
-        if (isAtBottom(tetromino, grid.value, width, offset)) {
-            freezeTetromino(tetromino, grid, offset);
-            randomIndex.value = Math.floor(Math.random() * tetrominosArray.length);
-            let newTetromino = tetrominosArray[randomIndex.value][0];
-            return newTetromino;
-        }
+
+    function moveDown(tetromino, grid, width, offset) {
 
         grid.value = undrawTetromino(tetromino, grid.value, offset);
-        let movedTetromino = tetromino.map(index => index + width);
-        grid.value = drawTetromino(movedTetromino, grid.value, offset);
-        return movedTetromino;
+        // let movedTetromino = tetromino.map(index => index + width);
+        offset += width;
+        grid.value = drawTetromino(tetromino, grid.value, offset);
+        return offset;
     }
 
     function initGame() {
-        gridArray.value = drawTetromino(currentTetromino.value, gridArray.value, offset);
+        gridArray.value = drawTetromino(currentTetromino.value, gridArray.value, offset.value);
         timerId = setInterval(() => {
-            currentTetromino.value = moveDown(currentTetromino.value, gridArray, width, offset, randomIndex);
+            if (isAtBottom(currentTetromino.value, gridArray.value, width, offset.value)) {
+            gridArray.value = freezeTetromino(currentTetromino.value, gridArray.value, offset.value );
+            randomIndex.value = nextTetrominoIndex(currentTetromino.value, gridArray, width.value, offset.value, randomIndex.value);
+            currentTetromino.value = tetrominosArray[randomIndex.value][currentRotationIndex.value];
+            offset.value = 4;
+        }
+    
+            offset.value = moveDown(currentTetromino.value, gridArray, width, offset.value);
         }, 500);
 }
 
